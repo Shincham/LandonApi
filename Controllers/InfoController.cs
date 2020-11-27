@@ -1,4 +1,5 @@
-﻿using LandonApi.Models;
+﻿using LandonApi.Infrastructure;
+using LandonApi.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using System;
@@ -17,13 +18,20 @@ namespace LandonApi.Controllers
         public InfoController(IOptions<HotelInfo> hotelInfoWrapper)
         {
             _hotelInfo = hotelInfoWrapper.Value;
+            _hotelInfo.Self = Link.To(nameof(GetInfo));
         }
 
         [HttpGet(Name = nameof(GetInfo))]
         [ProducesResponseType(200)]
+        [ProducesResponseType(304)]
+        [ResponseCache(CacheProfileName = "Static")]
+        [Etag]
         public ActionResult<HotelInfo> GetInfo()
         {
-            _hotelInfo.Href = Url.Link(nameof(GetInfo), null);
+            if (!Request.GetEtagHandler().NoneMatch(_hotelInfo))
+            {
+                return StatusCode(304, _hotelInfo);
+            }
 
             return _hotelInfo;
         }
